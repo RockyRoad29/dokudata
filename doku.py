@@ -1,25 +1,22 @@
 import logging
 import os
 import re
-from checkbox.properties import File
 import sqlite3
 
 
 class Doku:
     """A dokuwiki site, from host's point of view.
 
-    Class attributes
-    ----------------
+    .. rubric:: Testing filenames patterns
 
-    attic_pattern - Page attic filename pattern.
+    :py:attr:`attic_pattern` - Page attic filename pattern.
 
     >>> m = Doku.attic_pattern.match("calendrier.1367320658.txt.gz")
     >>> [m.group(i) for i in (1, 2, 3)]
     ['calendrier', '1367320658', '']
 
-    #: media_attic_pattern - Media attic filename pattern
+    :py:attr:media_attic_pattern - Media attic filename pattern
 
-    #
     >>> m = Doku.media_attic_pattern.match("fiche_inscription_v1.1336687823.pdf")
     >>> [m.group(i) for i in (1, 2, 3)]
     ['fiche_inscription_v1', '1336687823', '.pdf']
@@ -28,6 +25,7 @@ class Doku:
     attic_pattern = re.compile('^(.*)\.([0-9]+)()\.txt\.gz')
     #: Media attic filename pattern
     media_attic_pattern = re.compile('^(.*)\.([0-9]+)(\..*)$')
+    #: Database definition script
     ddl = [
         '''CREATE TABLE nodes (
             id integer primary key autoincrement,
