@@ -26,21 +26,22 @@ class Doku:
     #: Media attic filename pattern
     media_attic_pattern = re.compile('^(.*)\.([0-9]+)(\..*)$')
     #: Database definition script
-    ddl = [
-        '''CREATE TABLE nodes (
+    ddl = '''
+    CREATE TABLE nodes (
             id integer primary key autoincrement,
             type varchar(10) not null,
             ns_id integer references ns(id),
             name varchar(255) not null,
-            ext varchar(10))''',
-        '''CREATE TABLE ns (
+            ext varchar(10));
+    CREATE TABLE ns (
             id integer primary key autoincrement,
-            fullname varchar(255) unique not null)''',
-        '''CREATE TABLE revisions (
+            fullname varchar(255) unique not null);
+    CREATE TABLE revisions (
             id integer primary key autoincrement,
             node_id integer references nodes(id),
-            time varchar(255) not null)''',
-    ]
+            time varchar(255) not null);
+    '''
+
 
     def __init__(self, path):
         self.path = path
@@ -59,14 +60,34 @@ class Doku:
         root = self.namespaces[0]
         root.summary()
 
-    def persist(self, db):
-        conn = sqlite3.connect(db)
-        c = conn.cursor()
 
-        # Create table
-        [c.execute(s) for s in Doku.ddl]
+    def create_database(self, db, overwrite=False):
+        """ Create database tables.
+        :param db:
+        :param overwrite:
+
+        >>> conn = Doku("").create_database("/tmp/test.db", overwrite=True)
+        >>> conn.cursor().execute("select count(*) from nodes").fetchone()[0]
+        0
+        """
+        if os.path.exists(db):
+            if overwrite:
+                os.unlink(db)
+            else:
+                raise FileExistsError("I cannot reuse an existing database")
+
+        conn = sqlite3.connect(db)
+
+        c = conn.cursor()
+        c.executescript(Doku.ddl)
+
+        conn.commit()
+        return conn
+
+    def persist2db(self, db):
+        conn = self.create_database(db)
         root = self.namespaces[0]
-        root.persist(c)
+        root.persist2db(c)
         # Save (commit) the changes
         conn.commit()
 
@@ -213,17 +234,17 @@ class DokuNamespace:
         for k, ns in self.children.items():
             ns.summary()
 
-    def persist(self, c):
+    def persist2db(self, c):
         c.execute('''
         INSERT INTO ns (fullname) VALUES (?)
         ''', (self.fullname,))
         ns_id = c.lastrowid
         for k, page in self.pages.items():
-            page.persist(c, ns_id)
+            page.persist2db(c, ns_id)
             for k, media in self.medias.items():
-                media.persist(c, ns_id)
+                media.persist2db(c, ns_id)
         for k, ns in self.children.items():
-            ns.persist(c)
+            ns.persist2db(c)
 
 
 class DokuNode:
@@ -250,7 +271,7 @@ class DokuNode:
         else:
             return "ok"
 
-    def persist(self, c, ns_id):
+    def persist2db(self, c, ns_id):
         c.execute('''
         INSERT INTO nodes (type, ns_id, name) VALUES (?, ?, ?)
         ''', (self.__class__.__name__, ns_id, self.name))
