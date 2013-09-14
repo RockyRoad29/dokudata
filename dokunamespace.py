@@ -57,100 +57,39 @@ class DokuNamespace:
     def getFullName(self):
         return self.fullname
 
-    def load(self):
-        """Scans a directory tree and builds site structure"""
-        logging.debug("* Namespace: %s", self.getFullName())
-        path = os.path.join(self.data, "pages", self.getPath())
-        for name in os.listdir(path):
-            entry = os.path.join(path, name)
-            logging.debug("* Entry: %s", entry)
-            if os.path.isdir(entry):
-                ns = DokuNamespace(name, self, self.data)
-                self.children[name] = ns
-                ns.load()
-            else:
-                if not (name.endswith('.txt')):
-                    logging.error("Page name not parsable: %s", name)
-                    key = name
-                key = name[:-4]
-                self.pages[key] = DokuPage(self, key, os.path.getsize(entry))
+    def addPage(self, name, size):
+        page = DokuPage(self, name, size)
+        self.pages[name] = page
+        return page
 
-                # self.load_media()
-
-    def load_media(self):
-        path = self.getPathFor("media")
-        if not os.path.exists(path):
-            return
-        for name in os.listdir(path):
-            entry = os.path.join(path, name)
-            logging.debug("* Entry: %s", entry)
-            if os.path.isdir(entry):
-                if name in [self.children]:
-                    ns = self.children['name']
-                else:
-                    ns = DokuNamespace(name, self, self.data)
-                    self.children[name] = ns
-                    ns.load_media()
-            else:
-                self.medias[name] = DokuMedia(self, name, os.path.getsize(entry))
-
-    def load_history(self):
-        path = self.getPathFor("attic")
-        if not os.path.exists(path):
-            return
-        for name in os.listdir(path):
-            if name == '_dummy':
-                continue
-            entry = os.path.join(path, name)
-            logging.debug("* History: %s", entry)
-            if os.path.isdir(entry):
-                if name in [self.children]:
-                    ns = self.children[name]
-                else:
-                    ns = DokuNamespace(name, self, self.data)
-                    self.children[name] = ns
-                    ns.load_history()
-            else:
-                self.add_version(name, self.pages, DokuNamespace.attic_pattern)
-
-
-    def add_version(self, filename, collection, pattern=attic_pattern):
-        m = pattern.match(filename)
-        if m is not None:
-            (name, date, ext) = m.groups()
-            key = name + ext
-            if key in collection:
-                obj = collection[key]
-            else:
-                logging.warning("attic file %s:%s is orphan", self.getFullName(), filename)
-                if collection is self.pages:
-                    obj = DokuPage(self, key, -1, orphan=True)
-                else:
-                    obj = DokuMedia(self, key, -1, orphan=True)
-                collection[key] = obj
-            obj.add_version(date)
+    def getPage(self, name):
+        if not name in self.pages:
+            logging.warning("Page %s not found in %s", name, self.fullname)
+            page = self.addPage(name, -1)
         else:
-            logging.error("attic filename not parsable: '%s'", filename)
+            page = self.pages[name]
+        return page
 
+    def addMedia(self, name, size):
+        media = DokuMedia(self, name, size)
+        self.medias[name] = media
+        return media
 
-    def load_media_history(self):
-        path = self.getPathFor("media_attic")
-        if not os.path.exists(path):
-            return
-        for name in os.listdir(path):
-            if name == '_dummy':
-                continue
-            entry = os.path.join(path, name)
-            logging.debug("* Media history: %s", entry)
-            if os.path.isdir(entry):
-                if name in [self.children]:
-                    ns = self.children[name]
-                else:
-                    ns = DokuNamespace(name, self, self.data)
-                    self.children[name] = ns
-                    ns.load_media_history()
-            else:
-                self.add_version(name, self.medias, DokuNamespace.media_attic_pattern)
+    def getMedia(self, name):
+        if not name in self.pages:
+            logging.warning("Media %s not found in %s", name, self.fullname)
+            media = self.addMedia(name, -1)
+        else:
+            media = self.medias[name]
+        return media
+
+    def getNamespace(self, name):
+        if name in [self.children]:
+            ns = self.children[name]
+        else:
+            ns = DokuNamespace(name, self, self.data)
+            self.children[name] = ns
+        return ns
 
 
     def summary(self):

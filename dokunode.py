@@ -29,8 +29,8 @@ class DokuNode:
 
     def persist2db(self, c, ns_id):
         c.execute('''
-        INSERT INTO nodes (type, ns_id, name) VALUES (?, ?, ?)
-        ''', (self.__class__.__name__, ns_id, self.name))
+        INSERT INTO nodes (type, ns_id, name, size) VALUES (?, ?, ?, ?)
+        ''', (self.__class__.__name__, ns_id, self.name, self.size))
         node_id = c.lastrowid
         for rev in self.versions:
             c.execute('''

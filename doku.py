@@ -2,6 +2,7 @@ import os
 import re
 import sqlite3
 from dokunamespace import DokuNamespace
+from dokutree import DokuPages, DokuMedia, DokuAttic, DokuMediaAttic
 
 
 class Doku:
@@ -14,29 +15,32 @@ class Doku:
             type varchar(10) not null,
             ns_id integer references ns(id),
             name varchar(255) not null,
-            ext varchar(10));
+            ext varchar(10),
+            size integer);
     CREATE TABLE ns (
             id integer primary key autoincrement,
             fullname varchar(255) unique not null);
     CREATE TABLE revisions (
             id integer primary key autoincrement,
             node_id integer references nodes(id),
-            time varchar(255) not null);
+            time varchar(255) not null,
+            size integer);
     '''
 
 
     def __init__(self, path):
         self.path = path
         self.version = None
-        self.namespaces = [DokuNamespace("", parent=None, data=os.path.join(self.path, "data"))]
+        self.data = os.path.join(self.path, "data")
+        self.namespaces = [DokuNamespace("", parent=None, data=self.data)]
 
     def load(self):
         """Scans a directory tree and builds site structure"""
         root = self.namespaces[0]
-        root.load()
-        root.load_history()
-        root.load_media()
-        root.load_media_history()
+        DokuPages(self).load(None, root)
+        DokuMedia(self).load(None,root)
+        DokuAttic(self).load(None,root)
+        DokuMediaAttic(self).load(None,root)
 
     def summary(self):
         root = self.namespaces[0]
@@ -66,8 +70,9 @@ class Doku:
         conn.commit()
         return conn
 
-    def persist2db(self, db):
-        conn = self.create_database(db)
+    def persist2db(self, db, overwrite=False):
+        conn = self.create_database(db, overwrite)
+        c = conn.cursor()
         root = self.namespaces[0]
         root.persist2db(c)
         # Save (commit) the changes
