@@ -11,8 +11,8 @@ class DokuNode:
         self.orphan = orphan
         self.versions = []
 
-    def add_version(self, date):
-        self.versions.append(date)
+    def add_version(self, date, size):
+        self.versions.append((date, size))
 
     def summary(self):
         print("  - [%s] %s - %d bytes - %d revisions : %s" % (
@@ -32,10 +32,10 @@ class DokuNode:
         INSERT INTO nodes (type, ns_id, name, size) VALUES (?, ?, ?, ?)
         ''', (self.__class__.__name__, ns_id, self.name, self.size))
         node_id = c.lastrowid
-        for rev in self.versions:
+        for (rev, size) in self.versions:
             c.execute('''
-            INSERT INTO revisions (node_id, time) VALUES (?, ?)
-            ''', (node_id, rev))
+            INSERT INTO revisions (node_id, time, size) VALUES (?, ?, ?)
+            ''', (node_id, rev, size))
 
 
 class DokuPage(DokuNode):

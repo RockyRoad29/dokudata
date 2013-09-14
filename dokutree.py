@@ -21,13 +21,13 @@ class DokuTree:
         logging.info("* Loading " + treename)
 
     def getPattern(self):
-        return DokuTree.pattern;
+        return self.pattern;
 
     def parse(self, filename):
         m = self.getPattern().match(filename)
         if not m:
-            raise ValueError("Parsing %s as %s entry", filename, self.treename )
-        return [m.groups()]
+            raise ValueError("Parsing %s as %s entry with /%s/", filename, self.treename, self.getPattern().pattern )
+        return tuple(m.groups())
 
     def add_node(self, entry, size, ns):
         raise NotImplementedError("Pure Virtual")
@@ -48,6 +48,13 @@ class DokuTree:
                 self.add_node(entry, os.path.getsize(abspath), ns)
 
 class DokuPages(DokuTree):
+    """
+    >>> tree = DokuPages(None)
+    >>> tree.parse("calendrier.txt")
+    ('calendrier', '.txt')
+
+    """
+    pattern = re.compile('^(.*)(\.txt)$')
     def __init__(self, doku):
         super().__init__(doku, "pages")
 
@@ -55,24 +62,33 @@ class DokuPages(DokuTree):
         if not (entry.endswith('.txt')):
             logging.error("Page name not parsable: %s", entry)
             name = entry
+            return (name, None)
         else:
             name = entry[:-4]
-        return (name,None, None)
+            return (name, '.txt')
 
     def add_node(self, entry, size, ns):
         name = self.parse(entry)[0]
         ns.addPage(name, size)
 
 class DokuMedia(DokuTree):
+    """
+    >>> tree = DokuMedia(None)
+    >>> tree.parse("calendrier.jpg")
+    ('calendrier', '.jpg')
+
+    """
+    pattern = re.compile('^(.*)(\.[^.]*)$')
+
     def __init__(self, doku):
         super().__init__(doku, "media")
 
-    def parse(self, filename):
-        return (filename)
+    # def parse(self, filename):
+    #     return (filename)
 
     def add_node(self, entry, size, ns):
-        (name) = self.parse(entry)
-        ns.addMedia(name, size)
+        (name, ext) = self.parse(entry)
+        ns.addMedia(name+ext, size)
 
 class DokuAttic(DokuTree):
     """
@@ -82,7 +98,7 @@ class DokuAttic(DokuTree):
 
     >>> tree = DokuAttic(None)
     >>> tree.parse("calendrier.1367320658.txt.gz")
-    ['calendrier', '1367320658', 'txt.gz']
+    ('calendrier', '1367320658', '.txt.gz')
 """
     def __init__(self, doku):
         super().__init__(doku, "attic")
@@ -98,17 +114,17 @@ class DokuMediaAttic(DokuTree):
 
     :py:attr:pattern - Media attic filename pattern
 
-    >>> tree = DokuMediaAttic(None, "media_attic")
+    >>> tree = DokuMediaAttic(None)
     >>> tree.parse("fiche_inscription_v1.1336687823.pdf")
-    ['fiche_inscription_v1', '1336687823', '.pdf']
+    ('fiche_inscription_v1', '1336687823', '.pdf')
     """
 
     def __init__(self, doku):
-        super().__init__(doku, "pages")
+        super().__init__(doku, "media_attic")
 
     def add_node(self, entry, size, ns):
         (name, rev, ext) = self.parse(entry)
-        media = ns.getMedia(name + ext)
+        media = ns.getMedia(name+ext)
         media.add_version(rev, size)
 
 
