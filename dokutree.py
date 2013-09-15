@@ -15,8 +15,8 @@ class DokuTree:
     pattern = re.compile('^(.*)(\.[^.]*)$')
 
 
-    def __init__(self, doku, treename):
-        self.doku = doku
+    def __init__(self, root, treename):
+        self.root = root
         self.treename = treename
         logging.info("* Loading " + treename)
 
@@ -32,10 +32,13 @@ class DokuTree:
     def add_node(self, entry, size, ns):
         raise NotImplementedError("Pure Virtual")
 
-    def load(self, dirpath, ns):
+    def loadRoot(self):
+        return self.load(self.root, self.root.getPathFor(self.treename))
+
+    def load(self, ns, dirpath):
         """Scans a directory tree and builds site structure"""
-        if dirpath is None:
-            dirpath = os.path.join(self.doku.data, self.treename)
+        assert(dirpath)
+        logging.info("* Loading tree: %s", dirpath)
         #dirpath = ns.getPath(self.treename)
         for entry in os.listdir(dirpath):
             if self.ignore(entry):
@@ -43,7 +46,7 @@ class DokuTree:
             abspath = os.path.join(dirpath, entry)
             logging.debug("* direntry: %s", abspath)
             if os.path.isdir(abspath):
-                self.load(abspath, ns.getNamespace(entry))
+                self.load(ns.getNamespace(entry), abspath)
             else:
                 self.add_node(entry, os.path.getsize(abspath), ns)
 

@@ -9,51 +9,27 @@ __author__ = 'mich'
 
 class DokuNamespace:
     """
-        .. rubric:: Testing filenames patterns
-
-    :py:attr:`attic_pattern` - Page attic filename pattern.
-
-    >>> m = DokuNamespace.attic_pattern.match("calendrier.1367320658.txt.gz")
-    >>> [m.group(i) for i in (1, 2, 3)]
-    ['calendrier', '1367320658', '']
-
-    :py:attr:media_attic_pattern - Media attic filename pattern
-
-    >>> m = DokuNamespace.media_attic_pattern.match("fiche_inscription_v1.1336687823.pdf")
-    >>> [m.group(i) for i in (1, 2, 3)]
-    ['fiche_inscription_v1', '1336687823', '.pdf']
     """
-
-    #: Page attic filename pattern.
-    attic_pattern = re.compile('^(.*)\.([0-9]+)()\.txt\.gz')
-    #: Media attic filename pattern
-    media_attic_pattern = re.compile('^(.*)\.([0-9]+)(\..*)$')
-
     #: Namespace separator
     sep = ":"
 
-    def getPathFor(self, role="attic"):
-        return os.path.join(self.data, role, self.getPath())
+    def getDataPath(self):
+        return self.parent.getDataPath()
 
-    def __init__(self, name, parent, data):
-        self.data = data
+    def getPathFor(self, tree="attic"):
+        return os.path.join(self.getDataPath(), tree, self.getPath())
+
+    def __init__(self, name, parent):
+        assert(name and parent)
         self.parent = parent
         self.name = name
         self.pages = {}
         self.medias = {}
         self.children = {}
-
-        if self.parent:
-            self.path = os.path.join(self.parent.getPath(), self.name)
-            self.fullname = (self.parent.getFullName() + self.name + DokuNamespace.sep)
-        else:
-            self.path = self.name
-            self.fullname = DokuNamespace.sep
-            #self.media_path = self.getPathFor("media")
-            #self.attic_path = self.getPathFor("attic")
+        self.fullname = (self.parent.getFullName() + self.name + DokuNamespace.sep)
 
     def getPath(self):
-        return self.path
+        return os.path.join(self.parent.getPath(),self.name)
 
     def getFullName(self):
         return self.fullname
@@ -87,10 +63,10 @@ class DokuNamespace:
         return media
 
     def getNamespace(self, name):
-        if name in [self.children]:
+        if name in self.children:
             ns = self.children[name]
         else:
-            ns = DokuNamespace(name, self, self.data)
+            ns = DokuNamespace(name, self)
             self.children[name] = ns
         return ns
 
@@ -118,6 +94,24 @@ class DokuNamespace:
             media.persist2db(c, ns_id)
         for k, ns in self.children.items():
             ns.persist2db(c)
+
+
+class DokuRoot(DokuNamespace):
+
+    def __init__(self, wiki):
+        self.data = os.path.join(wiki.path, "data")
+        self.name = ""
+        self.fullname = DokuNamespace.sep
+        self.pages = {}
+        self.medias = {}
+        self.children = {}
+
+    def getDataPath(self):
+        return self.data
+
+    def getPath(self):
+        return ''
+
 
 if __name__ == "__main__":
     import doctest

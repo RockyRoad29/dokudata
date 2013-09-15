@@ -14,7 +14,7 @@ if __name__ == "__main__":
         '/home/mich/services/sel2mers/mirror/sel2mers/doku'
         ]]
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     for (name, path) in wikiset:
         print("#+TITLE", name, path)

@@ -5,7 +5,7 @@ from doku import Doku
 __author__ = 'mich'
 
 if __name__ == "__main__":
-    if True:
+    if False:
         WIKINAME = 's2m-130911'
         WIKIPATH = '/home/mich/services/sel2mers/mirror/sel2mers/wiki'
     else:
