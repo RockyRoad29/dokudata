@@ -8,30 +8,8 @@ from dokutree import DokuPagesTree, DokuMediaTree, DokuAttic, DokuMediaAttic, Do
 class Doku:
     """A dokuwiki site, from host's point of view.
     """
-    #: Database definition script
-    ddl = '''
-    CREATE TABLE nodes (
-            id integer primary key autoincrement,
-            type varchar(10) not null,
-            ns_id integer references ns(id),
-            name varchar(255) not null,
-            size integer,
-            sz_changes integer,
-            sz_indexed integer,
-            sz_meta integer,
-            meta text
-            );
-    CREATE TABLE ns (
-            id integer primary key autoincrement,
-            fullname varchar(255) unique not null);
-    CREATE TABLE revisions (
-            id integer primary key autoincrement,
-            node_id integer references nodes(id),
-            time varchar(255) not null,
-            size integer,
-            meta text);
-    '''
-
+    #: Database definition script filename
+    ddl = 'dokudata.ddl'
 
     def __init__(self, path):
         self.path = path
@@ -73,7 +51,9 @@ class Doku:
         conn = sqlite3.connect(db)
 
         c = conn.cursor()
-        c.executescript(Doku.ddl)
+        with open(Doku.ddl) as f:
+            script = f.read()
+        c.executescript(script)
 
         conn.commit()
         return conn

@@ -4,17 +4,22 @@ from doku import Doku
 
 __author__ = 'mich'
 
-if __name__ == "__main__":
-    if False:
-        WIKINAME = 's2m-130911'
-        WIKIPATH = '/home/mich/services/sel2mers/mirror/sel2mers/wiki'
-    else:
-        WIKINAME = 's2m-130913'
-        WIKIPATH = '/home/mich/services/sel2mers/mirror/sel2mers/doku'
+def _doku2db(name, path):
+    pass
 
-    basename = "/tmp/doku-" + WIKINAME
+
+def doku2db(name, path):
+    global basename, wiki
+    basename = "/tmp/doku-" + name
     logging.basicConfig(level=logging.INFO, filename=basename + ".log", filemode="w")
-    wiki = Doku(WIKIPATH)
-
+    wiki = Doku(path)
     wiki.load()
-    wiki.persist2db(basename + ".db",overwrite=True)
+    wiki.persist2db(basename + ".db", overwrite=True)
+
+
+if __name__ == "__main__":
+    doku2db('s2m-130911',
+            '/home/mich/services/sel2mers/mirror/sel2mers/wiki')
+    doku2db('s2m-130913',
+            '/home/mich/services/sel2mers/mirror/sel2mers/doku')
+
