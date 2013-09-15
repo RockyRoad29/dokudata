@@ -1,4 +1,5 @@
 import logging
+from phpserialize import serialize, unserialize
 
 __author__ = 'mich'
 
@@ -38,13 +39,16 @@ class DokuRevision(DokuNodeFile):
     def __init__(self, node, date, size):
         super().__init__(node, size)
         self.date = date
+        self.meta = None
 
     def persist2db(self, c, node_id):
         c.execute('''
-        INSERT INTO revisions (node_id, time, size) VALUES (?, ?, ?)
-        ''', (node_id, self.date, self.size))
+        INSERT INTO revisions (node_id, time, size, meta) VALUES (?, ?, ?, ?)
+        ''', (node_id, self.date, self.size, serialize(self.meta)))
 
-
+    def setMetaFields(self, dict):
+        self.meta = dict
+        logging.debug("  Revision fields: %s", repr(self.meta))
 
 class DokuIndexed(DokuNodeFile):
     """
@@ -76,9 +80,10 @@ class DokuNode(DokuFile):
         self.ns = ns
         self.name = name
         self.revisions = {}
-        self.changes = None
+        self.sz_changes = None
+        self.sz_meta = None
+        self.sz_indexed = None
         self.meta = None
-        self.indexed = None
 
     def isMissing(self):
         return self.size < 0
@@ -97,17 +102,31 @@ class DokuNode(DokuFile):
             rev = self.revisions[date]
         return rev
 
-    def setChanges(self, size):
-        assert self.changes is None
-        self.changes = DokuChanges(self, size)
+    def setChanges(self, text):
+        assert self.sz_changes is None
+        self.sz_changes = DokuChanges(self, len(text))
+        for line in text.splitlines():
+            fields = line.split("\t")
+            date = fields[0]
+            z = zip(('ip', 'mode', 'name', 'user', 'summary', 'extra', 'flags'), fields[1:])
+            rev = self.getRevision(date)
+            rev.setMetaFields(dict(z))
 
-    def setIndexed(self, size):
-        assert self.indexed is None
-        self.indexed = DokuIndexed(self, size)
+    def setIndexed(self, text):
+        assert self.sz_indexed is None
+        self.sz_indexed = DokuIndexed(self, len(text))
 
-    def setMeta(self, size):
-        assert self.meta is None
-        self.meta = DokuMeta(self, size)
+    def setMeta(self, text):
+        assert self.sz_meta is None
+        self.sz_meta = DokuMeta(self, len(text))
+        try:
+            self.meta = unserialize(text.encode(), decode_strings=True)
+            logging.info(repr(self.meta))
+        except Exception as e:
+            logging.error(e)
+            logging.info(text)
+            self.meta = text
+            raise e
 
     def summary(self):
         print("  - [%s] %s - %d bytes - %d revisions : %s" % (
@@ -117,22 +136,22 @@ class DokuNode(DokuFile):
         return len(self.revisions)
 
     def persist2db(self, c, ns_id):
-        sz_changes = self.changes.size if self.changes else self.MISSING
-        sz_indexed = self.indexed.size if self.indexed else self.MISSING
-        sz_meta = self.meta.size if self.meta else self.MISSING
+        sz_changes = self.sz_changes.size if self.sz_changes else self.MISSING
+        sz_indexed = self.sz_indexed.size if self.sz_indexed else self.MISSING
+        sz_meta = self.sz_meta.size if self.sz_meta else self.MISSING
         c.execute('''
         INSERT INTO nodes (type, ns_id, name, size,
-                           sz_changes, sz_indexed, sz_meta)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                           sz_changes, sz_indexed, sz_meta, meta)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (self.__class__.__name__, ns_id, self.name, self.size,
-            sz_changes, sz_indexed, sz_meta
+            sz_changes, sz_indexed, sz_meta, serialize(self.meta)
         ))
         node_id = c.lastrowid
         for date, rev in self.revisions.items():
             rev.persist2db(c, node_id)
 
     def getFullname(self):
-        return self.ns.getFullname() + self.ns.sep + self.name
+        return self.ns.getFullName() + self.ns.sep + self.name
 
 
 class DokuPage(DokuNode):

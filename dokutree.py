@@ -158,14 +158,14 @@ class DokuMetaTree(DokuTree):
         (name, ext) = self.parse(entry)
         page = ns.getPage(name)
         size = self.getsize(abspath)
+        with open(abspath) as f:
+            contents = f.read()
         if ext=='.changes':
-            # TODO changes = self.parseChanges(entry)
-            page.setChanges(size)
+            page.setChanges(contents)
         elif (ext == '.indexed'):
-            page.setIndexed(size)
+            page.setIndexed(contents)
         elif (ext == '.meta'):
-            # TODO meta = self.parseMeta(entry)
-            page.setMeta(size)
+            page.setMeta(contents)
         else:
             logging.warning("Unexpected meta entry : %s", entry)
 

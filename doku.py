@@ -18,7 +18,8 @@ class Doku:
             size integer,
             sz_changes integer,
             sz_indexed integer,
-            sz_meta integer
+            sz_meta integer,
+            meta text
             );
     CREATE TABLE ns (
             id integer primary key autoincrement,
@@ -27,7 +28,8 @@ class Doku:
             id integer primary key autoincrement,
             node_id integer references nodes(id),
             time varchar(255) not null,
-            size integer);
+            size integer,
+            meta text);
     '''
 
 
