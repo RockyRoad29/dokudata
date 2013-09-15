@@ -29,7 +29,7 @@ class DokuTree:
             raise ValueError("Parsing %s as %s entry with /%s/", filename, self.treename, self.getPattern().pattern )
         return tuple(m.groups())
 
-    def add_node(self, entry, size, ns):
+    def add_node(self, entry, abspath, ns):
         raise NotImplementedError("Pure Virtual")
 
     def loadRoot(self):
@@ -48,10 +48,14 @@ class DokuTree:
             if os.path.isdir(abspath):
                 self.load(ns.getNamespace(entry), abspath)
             else:
-                self.add_node(entry, os.path.getsize(abspath), ns)
+                self.add_node(entry, abspath, ns)
 
     def ignore(self, entry):
         return (entry=='_dummy')
+
+    def getsize(self, abspath):
+        return os.path.getsize(abspath)
+
 
 class DokuPagesTree(DokuTree):
     """
@@ -73,12 +77,14 @@ class DokuPagesTree(DokuTree):
             name = entry[:-4]
             return (name, '.txt')
 
-    def add_node(self, entry, size, ns):
+
+
+    def add_node(self, entry, abspath, ns):
         (name, ext) = self.parse(entry)
         if ext != '.txt':
             logging.error("Page extension should be .txt", entry)
             name = entry
-        ns.addPage(name, size)
+        ns.addPage(name, self.getsize(abspath))
 
 
 class DokuMediaTree(DokuTree):
@@ -94,12 +100,12 @@ class DokuMediaTree(DokuTree):
     # def parse(self, filename):
     #     return (filename)
 
-    def add_node(self, entry, size, ns):
+    def add_node(self, entry, abspath, ns):
         # here, we parse just for checking
         (name, ext) = self.parse(entry)
-        # ns.addMedia(name+ext, size)
+        # ns.addMedia(name+ext, self.getsize(abspath))
         # we'd better keep full name here
-        ns.addMedia(entry, size)
+        ns.addMedia(entry, self.getsize(abspath))
 
 class DokuAttic(DokuTree):
     """
@@ -116,10 +122,10 @@ class DokuAttic(DokuTree):
     def __init__(self, doku, treename="attic"):
         super().__init__(doku, treename)
 
-    def add_node(self, entry, size, ns):
+    def add_node(self, entry, abspath, ns):
         (name, rev, ext) = self.parse(entry)
         page = ns.getPage(name)
-        page.addRevision(rev, size)
+        page.addRevision(rev, self.getsize(abspath))
 
 class DokuMediaAttic(DokuAttic):
     """
@@ -135,10 +141,10 @@ class DokuMediaAttic(DokuAttic):
     def __init__(self, doku):
         super().__init__(doku, "media_attic")
 
-    def add_node(self, entry, size, ns):
+    def add_node(self, entry, abspath, ns):
         (name, rev, ext) = self.parse(entry)
         media = ns.getMedia(name+ext)
-        media.addRevision(rev, size)
+        media.addRevision(rev, self.getsize(abspath))
 
 class DokuMetaTree(DokuTree):
 
@@ -148,9 +154,10 @@ class DokuMetaTree(DokuTree):
     def ignore(self, entry):
         return super().ignore(entry) or (entry.endswith('.trimmed')) or (entry == '_htcookiesalt')
 
-    def add_node(self, entry, size, ns):
+    def add_node(self, entry, abspath, ns):
         (name, ext) = self.parse(entry)
         page = ns.getPage(name)
+        size = self.getsize(abspath)
         if ext=='.changes':
             # TODO changes = self.parseChanges(entry)
             page.setChanges(size)
