@@ -114,8 +114,8 @@ class DokuNamespace:
         ns_id = c.lastrowid
         for k, page in self.pages.items():
             page.persist2db(c, ns_id)
-            for k, media in self.medias.items():
-                media.persist2db(c, ns_id)
+        for k, media in self.medias.items():
+            media.persist2db(c, ns_id)
         for k, ns in self.children.items():
             ns.persist2db(c)
 

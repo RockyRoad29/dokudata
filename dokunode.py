@@ -117,9 +117,16 @@ class DokuNode(DokuFile):
         return len(self.revisions)
 
     def persist2db(self, c, ns_id):
+        sz_changes = self.changes.size if self.changes else self.MISSING
+        sz_indexed = self.indexed.size if self.indexed else self.MISSING
+        sz_meta = self.meta.size if self.meta else self.MISSING
         c.execute('''
-        INSERT INTO nodes (type, ns_id, name, size) VALUES (?, ?, ?, ?)
-        ''', (self.__class__.__name__, ns_id, self.name, self.size))
+        INSERT INTO nodes (type, ns_id, name, size,
+                           sz_changes, sz_indexed, sz_meta)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (self.__class__.__name__, ns_id, self.name, self.size,
+            sz_changes, sz_indexed, sz_meta
+        ))
         node_id = c.lastrowid
         for date, rev in self.revisions.items():
             rev.persist2db(c, node_id)

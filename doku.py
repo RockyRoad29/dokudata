@@ -14,7 +14,11 @@ class Doku:
             type varchar(10) not null,
             ns_id integer references ns(id),
             name varchar(255) not null,
-            size integer);
+            size integer,
+            sz_changes integer,
+            sz_indexed integer,
+            sz_meta integer
+            );
     CREATE TABLE ns (
             id integer primary key autoincrement,
             fullname varchar(255) unique not null);
