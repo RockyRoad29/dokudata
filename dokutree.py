@@ -13,7 +13,8 @@ class DokuTree:
     nodes (':py:class:`DokuNode`) .
     """
     #: filename pattern
-    pattern = re.compile('^(.*)\.([0-9]+)(\..*)$')
+    pattern = re.compile('^(.*)(\.[^.]*)$')
+
 
     def __init__(self, doku, treename):
         self.doku = doku
@@ -58,7 +59,7 @@ class DokuPages(DokuTree):
     def __init__(self, doku):
         super().__init__(doku, "pages")
 
-    def parse(self, entry):
+    def _parse0(self, entry):
         if not (entry.endswith('.txt')):
             logging.error("Page name not parsable: %s", entry)
             name = entry
@@ -68,18 +69,20 @@ class DokuPages(DokuTree):
             return (name, '.txt')
 
     def add_node(self, entry, size, ns):
-        name = self.parse(entry)[0]
+        (name, ext) = self.parse(entry)
+        if ext != '.txt':
+            logging.error("Page extension should be .txt", entry)
+            name = entry
         ns.addPage(name, size)
 
-class DokuMedia(DokuTree):
+
+class DokuMedias(DokuTree):
     """
-    >>> tree = DokuMedia(None)
+    >>> tree = DokuMedias(None)
     >>> tree.parse("calendrier.jpg")
     ('calendrier', '.jpg')
 
     """
-    pattern = re.compile('^(.*)(\.[^.]*)$')
-
     def __init__(self, doku):
         super().__init__(doku, "media")
 
@@ -87,8 +90,11 @@ class DokuMedia(DokuTree):
     #     return (filename)
 
     def add_node(self, entry, size, ns):
+        # here, we parse just for checking
         (name, ext) = self.parse(entry)
-        ns.addMedia(name+ext, size)
+        # ns.addMedia(name+ext, size)
+        # we'd better keep full name here
+        ns.addMedia(entry, size)
 
 class DokuAttic(DokuTree):
     """
@@ -100,15 +106,17 @@ class DokuAttic(DokuTree):
     >>> tree.parse("calendrier.1367320658.txt.gz")
     ('calendrier', '1367320658', '.txt.gz')
 """
-    def __init__(self, doku):
-        super().__init__(doku, "attic")
+    pattern = re.compile('^(.*)\.([0-9]+)(\..*)$')
+
+    def __init__(self, doku, treename="attic"):
+        super().__init__(doku, treename)
 
     def add_node(self, entry, size, ns):
         (name, rev, ext) = self.parse(entry)
         page = ns.getPage(name)
         page.add_version(rev, size)
 
-class DokuMediaAttic(DokuTree):
+class DokuMediaAttic(DokuAttic):
     """
         .. rubric:: Testing filenames pattern
 
