@@ -1,7 +1,8 @@
 import logging
 import os
 import re
-from dokunode import DokuPage, DokuMedia
+from dokunode import DokuPage, DokuMedia, DokuFile
+
 
 __author__ = 'mich'
 
@@ -44,10 +45,10 @@ class DokuNamespace:
 
         if self.parent:
             self.path = os.path.join(self.parent.getPath(), self.name)
-            self.fullname = (self.parent.getFullName() + DokuNamespace.sep + self.name)
+            self.fullname = (self.parent.getFullName() + self.name + DokuNamespace.sep)
         else:
             self.path = self.name
-            self.fullname = name
+            self.fullname = DokuNamespace.sep
             #self.media_path = self.getPathFor("media")
             #self.attic_path = self.getPathFor("attic")
 
@@ -58,6 +59,7 @@ class DokuNamespace:
         return self.fullname
 
     def addPage(self, name, size):
+        assert(name not in self.pages)
         page = DokuPage(self, name, size)
         self.pages[name] = page
         return page
@@ -65,18 +67,19 @@ class DokuNamespace:
     def getPage(self, name):
         if not name in self.pages:
             logging.warning("Page %s not found in %s", name, self.fullname)
-            page = self.addPage(name, -1)
+            page = self.addPage(name, DokuFile.MISSING)
         else:
             page = self.pages[name]
         return page
 
     def addMedia(self, name, size):
+        assert(name not in self.medias)
         media = DokuMedia(self, name, size)
         self.medias[name] = media
         return media
 
     def getMedia(self, name):
-        if not name in self.pages:
+        if not name in self.medias:
             logging.warning("Media %s not found in %s", name, self.fullname)
             media = self.addMedia(name, -1)
         else:

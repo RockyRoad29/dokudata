@@ -1,18 +1,20 @@
-import os
+import logging
 from doku import Doku
+
 
 __author__ = 'mich'
 
 if __name__ == "__main__":
-#logging.basicConfig(level=logging.DEBUG)
+    if True:
+        WIKINAME = 's2m-130911'
+        WIKIPATH = '/home/mich/services/sel2mers/mirror/sel2mers/wiki'
+    else:
+        WIKINAME = 's2m-130913'
+        WIKIPATH = '/home/mich/services/sel2mers/mirror/sel2mers/doku'
 
-#    wiki = Doku('/home/mich/services/sel2mers/mirror/sel2mers/doku')
-    wiki = Doku('/home/mich/services/sel2mers/mirror/sel2mers/wiki')
-#    wiki = Doku('/usr/local/www/sel2mers-doku')
+    basename = "/tmp/doku-" + WIKINAME
+    logging.basicConfig(level=logging.INFO, filename=basename + ".log", filemode="w")
+    wiki = Doku(WIKIPATH)
 
     wiki.load()
-
-    db = '/tmp/doku.db'
-    # if os.path.exists(db):
-    #     os.unlink(db)
-    wiki.persist2db(db,overwrite=True)
+    wiki.persist2db(basename + ".db",overwrite=True)

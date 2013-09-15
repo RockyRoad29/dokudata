@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-from dokunode import DokuPage, DokuMedia
 
 __author__ = 'mich'
 
@@ -22,7 +21,7 @@ class DokuTree:
         logging.info("* Loading " + treename)
 
     def getPattern(self):
-        return self.pattern;
+        return self.pattern
 
     def parse(self, filename):
         m = self.getPattern().match(filename)
@@ -39,7 +38,7 @@ class DokuTree:
             dirpath = os.path.join(self.doku.data, self.treename)
         #dirpath = ns.getPath(self.treename)
         for entry in os.listdir(dirpath):
-            if entry=='_dummy':
+            if self.ignore(entry):
                 continue
             abspath = os.path.join(dirpath, entry)
             logging.debug("* direntry: %s", abspath)
@@ -48,9 +47,12 @@ class DokuTree:
             else:
                 self.add_node(entry, os.path.getsize(abspath), ns)
 
-class DokuPages(DokuTree):
+    def ignore(self, entry):
+        return (entry=='_dummy')
+
+class DokuPagesTree(DokuTree):
     """
-    >>> tree = DokuPages(None)
+    >>> tree = DokuPagesTree(None)
     >>> tree.parse("calendrier.txt")
     ('calendrier', '.txt')
 
@@ -76,9 +78,9 @@ class DokuPages(DokuTree):
         ns.addPage(name, size)
 
 
-class DokuMedias(DokuTree):
+class DokuMediaTree(DokuTree):
     """
-    >>> tree = DokuMedias(None)
+    >>> tree = DokuMediaTree(None)
     >>> tree.parse("calendrier.jpg")
     ('calendrier', '.jpg')
 
@@ -114,7 +116,7 @@ class DokuAttic(DokuTree):
     def add_node(self, entry, size, ns):
         (name, rev, ext) = self.parse(entry)
         page = ns.getPage(name)
-        page.add_version(rev, size)
+        page.addRevision(rev, size)
 
 class DokuMediaAttic(DokuAttic):
     """
@@ -133,8 +135,29 @@ class DokuMediaAttic(DokuAttic):
     def add_node(self, entry, size, ns):
         (name, rev, ext) = self.parse(entry)
         media = ns.getMedia(name+ext)
-        media.add_version(rev, size)
+        media.addRevision(rev, size)
 
+class DokuMetaTree(DokuTree):
+
+    def __init__(self, doku):
+        super().__init__(doku, "meta")
+
+    def ignore(self, entry):
+        return super().ignore(entry) or (entry.endswith('.trimmed')) or (entry == '_htcookiesalt')
+
+    def add_node(self, entry, size, ns):
+        (name, ext) = self.parse(entry)
+        page = ns.getPage(name)
+        if ext=='.changes':
+            # TODO changes = self.parseChanges(entry)
+            page.setChanges(size)
+        elif (ext == '.indexed'):
+            page.setIndexed(size)
+        elif (ext == '.meta'):
+            # TODO meta = self.parseMeta(entry)
+            page.setMeta(size)
+        else:
+            logging.warning("Unexpected meta entry : %s", entry)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,7 @@
 import os
-import re
 import sqlite3
 from dokunamespace import DokuNamespace
-from dokutree import DokuPages, DokuMedias, DokuAttic, DokuMediaAttic
+from dokutree import DokuPagesTree, DokuMediaTree, DokuAttic, DokuMediaAttic, DokuMetaTree
 
 
 class Doku:
@@ -36,10 +35,11 @@ class Doku:
     def load(self):
         """Scans a directory tree and builds site structure"""
         root = self.namespaces[0]
-        DokuPages(self).load(None, root)
-        DokuMedias(self).load(None, root)
+        DokuPagesTree(self).load(None, root)
+        DokuMediaTree(self).load(None, root)
         DokuAttic(self).load(None, root)
         DokuMediaAttic(self).load(None, root)
+        DokuMetaTree(self).load(None, root)
 
     def summary(self):
         root = self.namespaces[0]
