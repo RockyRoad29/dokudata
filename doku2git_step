@@ -1,0 +1,67 @@
+#! /bin/bash
+set -x # turn on debug mode
+#set +x # turn off debug mode
+
+function my_init() {
+    cd /home/mich/services/sel2mers/wiki-maint
+    mkdir -p attic2git/{pages,media}
+    cd attic2git
+    git init
+}
+
+function doku_history() {
+    sqlite3 ../doku-s2m-sink.db << EOF > ../build.sh
+.separator "\t"
+.headers off
+select "doku2git_step", R.time, N.name,  "'" || replace(trim(replace(S.fullname,":"," "))," ","/") || "'",
+       R.ip, "'" || R.user || "'", "'" || R.mode || "'"
+from revisions R
+inner join nodes N on N.id=R.node_id
+inner join ns S on S.id=N.ns_id
+where (N.type="DokuPage") and (R.time > 1334471317) and (R.size >=0)
+order by R.time
+;
+EOF
+
+}
+function doku2git_step() {
+  tm=$1; nm=$2; ns=$3; ip=$4; usr=$5; mod=$6
+  page=pages/$ns/$nm.txt
+  if [ "$mod" == "D" ]; then
+      git rm $page
+  else
+      mkdir -p pages/$ns
+      gunzip -c ../data/attic/$ns/$nm.$tm.txt.gz > $page
+      git add $page
+  fi
+  changes=../data/meta/$ns/$nm.changes
+  if [ ! -f $changes ] ; then
+      echo "Couldn't find $changes"
+      exit
+  fi
+  summary=/tmp/this.changes
+  echo "[$mod] " > $summary
+  awk -F '\\t' "/^$tm/ "'{print "['$mod']" $6;}' $changes > $summary
+  # if [ ! -s $summary ] ; then
+  #     echo no comment > $summary
+  # fi
+  if [ "$usr" == "" ]; then
+      usr=Anon
+  fi
+  if [ "$ip" == "" ]; then
+      ip=ommitted.org
+  fi
+  git ci --date $tm --author "$usr <${usr,}@$ip>" -F /tmp/this.changes
+}
+
+#doku2git_step $*
+my_init
+source ../build.sh
+
+## Conclusion: ça marche !
+# $ du -hs ../data/attic/ .git ../attic2git-git.tgz
+# 2,8M	../data/attic/
+#  13M	.git
+# 960K	../attic2git-git.tgz
+
+## See also: https://github.com/hoxu/dokuwiki2git
