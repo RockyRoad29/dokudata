@@ -18,8 +18,10 @@ def doku2db(name, path):
 
 
 if __name__ == "__main__":
-    doku2db('s2m-130911',
-            '/home/mich/services/sel2mers/mirror/sel2mers/wiki')
-    doku2db('s2m-130913',
-            '/home/mich/services/sel2mers/mirror/sel2mers/doku')
-
+    # doku2db('s2m-130911',
+    #         '/home/mich/services/sel2mers/mirror/sel2mers/wiki')
+    # doku2db('s2m-130913',
+    #         '/home/mich/services/sel2mers/mirror/sel2mers/doku')
+    #
+    doku2db('s2m-sink',
+            '/home/mich/services/sel2mers/wiki-maint')

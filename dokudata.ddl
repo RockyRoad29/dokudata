@@ -17,7 +17,13 @@
             node_id integer references nodes(id),
             time varchar(255) not null,
             size integer,
-            meta text);
+            mode char(1),
+            user vchar(25),
+            name vchar(255),
+            ip char(16),
+            summary varchar(255),
+            extra varchar(255)
+            );
 
 create view overview as
 select ns.fullname,  N.id, N.type, N.name, N.size, N.sz_changes,

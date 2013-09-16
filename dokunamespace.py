@@ -95,10 +95,13 @@ class DokuNamespace:
         for k, ns in self.children.items():
             ns.persist2db(c)
 
+    def getDoku(self):
+        return self.parent.getDoku()
 
 class DokuRoot(DokuNamespace):
 
     def __init__(self, wiki):
+        self.doku = wiki
         self.data = os.path.join(wiki.path, "data")
         self.name = ""
         self.fullname = DokuNamespace.sep
@@ -108,6 +111,9 @@ class DokuRoot(DokuNamespace):
 
     def getDataPath(self):
         return self.data
+
+    def getDoku(self):
+        return self.doku
 
     def getPath(self):
         return ''

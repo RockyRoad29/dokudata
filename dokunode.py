@@ -18,6 +18,7 @@ class DokuFile(object):
         return self.size < 0
 
 
+
 class DokuNodeFile(DokuFile):
     """
     Represents a data/**/*.*  file which
@@ -42,11 +43,30 @@ class DokuRevision(DokuNodeFile):
         self.meta = None
 
     def persist2db(self, c, node_id):
-        c.execute('''
-        INSERT INTO revisions (node_id, time, size, meta) VALUES (?, ?, ?, ?)
-        ''', (node_id, self.date, self.size, serialize(self.meta)))
+        if self.meta:
+            c.execute('''
+                INSERT INTO revisions (node_id, time, size,
+                        mode, user, name, ip, summary, extra)
+                        VALUES (?, ?, ?,  ?, ?, ?, ?, ?, ?)
+                ''', (node_id, self.date, self.size,
+                      self.meta['mode'],
+                      self.meta['user'],
+                      self.meta['name'],
+                      self.meta['ip'],
+                      self.meta['summary'],
+                      self.meta['extra']
+            ))
+        else:
+            c.execute('''
+                INSERT INTO revisions (node_id, time, size)
+                VALUES (?, ?, ?)
+                ''', (node_id, self.date, self.size))
 
     def setMetaFields(self, dict):
+        """
+        example: {'mode': 'E', 'user': 'rockyroad', 'name': 'cr:27-01-2013',
+                'ip': '78.243.149.12', 'extra': '', 'summary': 'Ajout des notes de Jacqueline'}
+        """
         self.meta = dict
         logging.debug("  Revision fields: %s", repr(self.meta))
 
