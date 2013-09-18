@@ -1,6 +1,7 @@
 dokudata
 ========
-** Dokuwiki maintenance helpers **
+
+Dokuwiki cms maintenance helpers in python
 
 ### Welcome
 Dokudata is a python project designed to help webmaster to check and maintain their dokuwiki directory tree.
